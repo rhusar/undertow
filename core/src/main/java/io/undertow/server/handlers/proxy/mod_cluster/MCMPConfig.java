@@ -18,13 +18,14 @@
 
 package io.undertow.server.handlers.proxy.mod_cluster;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 import io.undertow.server.HttpHandler;
+
+import java.net.InetSocketAddress;
 
 /**
  * @author Emanuel Muckenhuber
+ * @author Radoslav Husar
+ * @version March 2016
  */
 public class MCMPConfig {
 
@@ -36,41 +37,23 @@ public class MCMPConfig {
         return new WebBuilder();
     }
 
-    private final String managementHost;
-    private final String managementHostIp;
-    private final int managementPort;
+    private final InetSocketAddress managementSocketAddress;
     private final AdvertiseConfig advertiseConfig;
 
     public MCMPConfig(Builder builder) {
-        this.managementHost = builder.managementHost;
-        this.managementPort = builder.managementPort;
         if (builder.advertiseBuilder != null) {
             this.advertiseConfig = new AdvertiseConfig(builder.advertiseBuilder, this);
         } else {
             this.advertiseConfig = null;
         }
-        String mhip = managementHost;
-        try {
-            mhip = InetAddress.getByName(managementHost).getHostAddress();
-        } catch (UnknownHostException e) {
-
-        }
-        this.managementHostIp = mhip;
+        managementSocketAddress = new InetSocketAddress(builder.managementHost, builder.managementPort);
     }
 
-    public String getManagementHost() {
-        return managementHost;
+    public InetSocketAddress getManagementSocketAddress() {
+        return managementSocketAddress;
     }
 
-    public int getManagementPort() {
-        return managementPort;
-    }
-
-    public String getManagementHostIp() {
-        return managementHostIp;
-    }
-
-    AdvertiseConfig getAdvertiseConfig() {
+    public AdvertiseConfig getAdvertiseConfig() {
         return advertiseConfig;
     }
 
@@ -121,8 +104,7 @@ public class MCMPConfig {
 
         private final int advertiseFrequency;
 
-        private final String managementHost;
-        private final int managementPort;
+        private final InetSocketAddress managementSocketAddress;
 
         AdvertiseConfig(AdvertiseBuilder builder, MCMPConfig config) {
             this.advertiseGroup = builder.advertiseGroup;
@@ -132,8 +114,7 @@ public class MCMPConfig {
             this.securityKey = builder.securityKey;
             this.protocol = builder.protocol;
             this.path = builder.path;
-            this.managementHost = config.getManagementHost();
-            this.managementPort = config.getManagementPort();
+            this.managementSocketAddress = config.getManagementSocketAddress();
         }
 
         public String getAdvertiseGroup() {
@@ -164,12 +145,8 @@ public class MCMPConfig {
             return advertiseFrequency;
         }
 
-        public String getManagementHost() {
-            return managementHost;
-        }
-
-        public int getManagementPort() {
-            return managementPort;
+        public InetSocketAddress getManagementSocketAddress() {
+            return managementSocketAddress;
         }
     }
 
@@ -207,9 +184,9 @@ public class MCMPConfig {
 
     public static class WebBuilder extends Builder {
 
-        boolean checkNonce = true;
-        boolean reduceDisplay = false;
-        boolean allowCmd = true;
+        private boolean checkNonce = true;
+        private boolean reduceDisplay = false;
+        private boolean allowCmd = true;
 
         public WebBuilder setCheckNonce(boolean checkNonce) {
             this.checkNonce = checkNonce;
@@ -235,17 +212,18 @@ public class MCMPConfig {
 
     public static class AdvertiseBuilder {
 
-        String advertiseGroup = "224.0.1.105";
-        String advertiseAddress = "127.0.0.1";
-        int advertisePort = 23364;
+        private String advertiseGroup = "224.0.1.105";
+        private String advertiseAddress = "127.0.0.1";
+        private int advertisePort = 23364;
 
-        String securityKey;
-        String protocol = "http";
-        String path = "/";
+        private String securityKey;
+        private String protocol = "http";
+        private String path = "/";
 
-        int advertiseFrequency = 10000;
+        private int advertiseFrequency = 10000;
 
         private final Builder parent;
+
         public AdvertiseBuilder(Builder parent) {
             this.parent = parent;
         }
